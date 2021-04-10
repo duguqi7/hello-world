@@ -4,10 +4,13 @@
 import os
 import sys
 import param
-#import util_zip
-#import util_txt
+import util_zip
+import txt
 #import util_excel
 import update
+
+language_table = []
+txtdir_table = []
 
 def get_platform_from_filename(filename):
 	if False == isinstance(filename, str):
@@ -69,8 +72,6 @@ def get_builddate_from_filename(filename):
 		return None
 	return filename[start_position:end_position]
 
-
-
 def process_debug_file(filename):
 	if 'DEBUG' not in filename:
 		return None
@@ -80,26 +81,37 @@ def process_debug_file(filename):
 	date = get_builddate_from_filename(filename)
 	update.update(platform, version, date)
 	#解压
-	
+	src_file = os.path.join(param.unprocessed_file_path, filename)
+	dst_dir = os.path.join(param.unprocessed_file_path, platform)
+	ret_value = util_zip.unzip_txt(src_file, dst_dir)
+	if 'OK' == ret_value:
+		print('unzip %s OK' % src_file)
+		txtdir_table.append(dst_dir)
+		return ret_value
+	else:
+		print('line:', sys._getframe().f_lineno, ',unzip %s failed' % src_file)
+		return 'Failed'
 
 def process_std_file(filename):
-	if 'STD' not in filename::
+	if 'STD' not in filename:
 		return None
-	
+	language = get_language_from_filename(filename)
+	if language not in language_table:
+		language_table.append(language)
 
-def main(unprocessed_file_path, reference_file_path, target_file_path):
+def main():
 	#参数判断
-	if False == isinstance(unprocessed_file_path, str) or \
-	   '' == unprocessed_file_path:
-		print('unprocessed_file_path error', unprocessed_file_path)
+	if False == isinstance(param.unprocessed_file_path, str) or \
+	   '' == param.unprocessed_file_path:
+		print('unprocessed_file_path error', param.unprocessed_file_path)
 		return None
-	if False == isinstance(reference_file_path, str) or \
-	   '' == reference_file_path:
-		print('reference_file_path error', reference_file_path)
+	if False == isinstance(param.reference_file_path, str) or \
+	   '' == param.reference_file_path:
+		print('reference_file_path error', param.reference_file_path)
 		return None
-	if False == isinstance(target_file_path, str) or \
-	   '' == target_file_path:
-		print('target_file_path error', target_file_path)
+	if False == isinstance(param.target_file_path, str) or \
+	   '' == param.target_file_path:
+		print('target_file_path error', param.target_file_path)
 		return None
 	#获取待处理目录下的文件列表
 	'''
@@ -109,7 +121,7 @@ def main(unprocessed_file_path, reference_file_path, target_file_path):
 	3.NEU的中性包,暂不处理
 	4.map和hicore_no_strip等调试文件,暂不处理
 	'''
-	unprocessed_files = os.list(unprocessed_file_path)
+	unprocessed_files = os.listdir(param.unprocessed_file_path)
 
 	#解压压缩文件
 	for file in unprocessed_files:
@@ -117,6 +129,20 @@ def main(unprocessed_file_path, reference_file_path, target_file_path):
 	#生成txt文件和excel函数
 	for file in unprocessed_files:
 		process_std_file(file)
+	for dir in txtdir_table:
+		files = os.listdir(dir)
+		for file in files:
+			if (-1 == file.find('CID')) and (file.find('STD') != -1):
+				txt.fileExchange(file, test_path, target_path, reference_path)
+	
+	'''
+	#转变生成txt文件
+	platform = get_platform_from_filename(filename)
+	test_path = os.path.join(param.unprocessed_file_path, platform)
+	txt.fileExchange(filename, test_path, param.target_file_path, param.reference_file_path)
+	'''
+	
+	print(language_table)
 
 
 
@@ -131,6 +157,6 @@ if __name__ == '__main__':
 		print('2.reference_file_path')
 		print('3.target_file_path')
 	else:
-		main(param.unprocessed_file_path, param.reference_file_path, param.target_file_path)
+		main()
 
 
