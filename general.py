@@ -9,8 +9,9 @@ import txt
 #import util_excel
 import update
 
-language_table = []
 txtdir_table = []
+language_dict = {}
+language_table = ['EN', 'ES', 'RU', 'CZ', 'GR', 'HR', 'PL', 'RO', 'TR', 'SI', 'SK', 'PT_BR', 'CN']
 
 def get_platform_from_filename(filename):
 	if False == isinstance(filename, str):
@@ -79,7 +80,7 @@ def process_debug_file(filename):
 	platform = get_platform_from_filename(filename)
 	version = get_version_from_filename(filename)
 	date = get_builddate_from_filename(filename)
-	update.update(platform, version, date)
+	update.update(platform, version, date, language_dict[platform])
 	#解压
 	src_file = os.path.join(param.unprocessed_file_path, filename)
 	dst_dir = os.path.join(param.unprocessed_file_path, platform)
@@ -96,10 +97,24 @@ def process_std_file(filename):
 	if 'STD' not in filename:
 		return None
 	language = get_language_from_filename(filename)
-	if language not in language_table:
-		language_table.append(language)
+	platform = get_platform_from_filename(filename)
+	if platform in language_dict.keys():
+		temp = language_dict[platform]
+	else:
+		temp = []
+	if language not in temp:
+		temp.append(language)
+	language_dict[platform] = temp
 
 def main():
+	'''
+	try:
+		import openpyxll #要验证是否安装的库名
+	except ImportError:
+		print('模块不存在')
+		return None
+	'''
+
 	#参数判断
 	if False == isinstance(param.unprocessed_file_path, str) or \
 	   '' == param.unprocessed_file_path:
@@ -123,28 +138,21 @@ def main():
 	'''
 	unprocessed_files = os.listdir(param.unprocessed_file_path)
 
-	#解压压缩文件
-	for file in unprocessed_files:
-		process_debug_file(file)
-	#生成txt文件和excel函数
+	#从unprocessed中, 根据固件包生成待处理语言表
 	for file in unprocessed_files:
 		process_std_file(file)
+	#解压unprocessed中的固件包信息,更新reference中的txt和excel文件
+	for file in unprocessed_files:
+		process_debug_file(file)
+	
+	#转化txt文件,并将txt文件和excel表格存放到target文件夹中
 	for dir in txtdir_table:
 		files = os.listdir(dir)
 		for file in files:
 			if (-1 == file.find('CID')) and (file.find('STD') != -1):
-				txt.fileExchange(file, test_path, target_path, reference_path)
+				txt.fileExchange(file, dir, param.target_file_path, param.reference_file_path)
 	
-	'''
-	#转变生成txt文件
-	platform = get_platform_from_filename(filename)
-	test_path = os.path.join(param.unprocessed_file_path, platform)
-	txt.fileExchange(filename, test_path, param.target_file_path, param.reference_file_path)
-	'''
-	
-	print(language_table)
-
-
+	#print(language_dict)
 
 
 
