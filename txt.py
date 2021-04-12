@@ -54,11 +54,11 @@ def fileExchange(file, test_path, target_path, reference_path):
 	if language not in language_table:
 		return None
 	
-	print('deal with ', file)
+	#print('deal with ', file)
 	target_file = os.path.join(target_path, file)
 	test_file = os.path.join(test_path, file)
 	target_fd = open(target_file, 'w')
-	print(test_file)
+	#print(test_file)
 	test_fd = open(test_file, 'r')
 	words = test_fd.read()
 	test_fd.close()
@@ -121,6 +121,7 @@ def fileExchange(file, test_path, target_path, reference_path):
 	target_fd.write(write_line)
 	reference_fd.close()
 	target_fd.close()
+	print('create %s OK' % target_file)
 
 def main():
 	files = os.listdir(test_path)
