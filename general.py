@@ -6,12 +6,13 @@ import sys
 import param
 import util_zip
 import txt
-#import util_excel
+import util_excel
 import update
 
 txtdir_table = []
 language_dict = {}
-language_table = ['EN', 'ES', 'RU', 'CZ', 'GR', 'HR', 'PL', 'RO', 'TR', 'SI', 'SK', 'PT_BR', 'CN']
+global_version = ''
+global_date = ''
 
 def get_platform_from_filename(filename):
 	if False == isinstance(filename, str):
@@ -41,7 +42,7 @@ def get_language_from_filename(filename):
 		#print('try find _STD_')
 		end_position = filename.find('STD')
 		if -1 == end_position:
-			print('error', filename)
+			print('line:', sys._getframe().f_lineno, 'error', filename)
 			return None
 	return filename[(start_position+1):(end_position-1)]
 
@@ -51,11 +52,11 @@ def get_version_from_filename(filename):
 		return None
 	start_position = filename.find('_V')
 	if -1 == start_position:
-		print('error', filename)
+		print('line:', sys._getframe().f_lineno, 'error', filename)
 		return None
 	end_position = filename.find('_', start_position+1)
 	if -1 == end_position:
-		print('error', filename)
+		print('line:', sys._getframe().f_lineno, 'error', filename)
 		return None
 	return filename[(start_position+1):end_position]
 
@@ -65,13 +66,26 @@ def get_builddate_from_filename(filename):
 		return None
 	start_position = filename.find('build')
 	if -1 == start_position:
-		print('error', filename)
+		print('line:', sys._getframe().f_lineno, 'error', filename)
 		return None
 	end_position = filename.find('.zip', start_position+1)
 	if -1 == end_position:
-		print('error', filename)
-		return None
+		end_position = filename.find('_', start_position+1)
+		if -1 == end_position:
+			print('line:', sys._getframe().f_lineno, 'error', filename)
+			return None
 	return filename[start_position:end_position]
+
+def update_excel():
+	#更新excel文件
+	excel_files = os.listdir(param.reference_file_path)
+	for file in excel_files:
+		if '.xls' in file and 'STD' in file:
+			platform = get_platform_from_filename(file)
+			language = get_language_from_filename(file)
+			if language in language_dict[platform]:
+				util_excel.update(global_version, global_date, os.path.join(param.reference_file_path, file))
+
 
 def process_debug_file(filename):
 	if 'DEBUG' not in filename:
@@ -80,7 +94,13 @@ def process_debug_file(filename):
 	platform = get_platform_from_filename(filename)
 	version = get_version_from_filename(filename)
 	date = get_builddate_from_filename(filename)
+	global global_version, global_date
+	global_version = version
+	global_date = date
+	
+	#更新txt文件
 	update.update(platform, version, date, language_dict[platform])
+	
 	#解压
 	src_file = os.path.join(param.unprocessed_file_path, filename)
 	dst_dir = os.path.join(param.unprocessed_file_path, platform)
@@ -141,19 +161,25 @@ def main():
 	#从unprocessed中, 根据固件包生成待处理语言表
 	for file in unprocessed_files:
 		process_std_file(file)
+	print('language dict from different platforms:', language_dict)
 	#解压unprocessed中的固件包信息,更新reference中的txt和excel文件
 	for file in unprocessed_files:
 		process_debug_file(file)
 	
+
+	update_excel()
+	
 	#转化txt文件,并将txt文件和excel表格存放到target文件夹中
+	filenum = 0;
 	for dir in txtdir_table:
+		
 		files = os.listdir(dir)
 		for file in files:
 			if (-1 == file.find('CID')) and (file.find('STD') != -1):
-				txt.fileExchange(file, dir, param.target_file_path, param.reference_file_path)
-	
-	#print(language_dict)
-
+				result = txt.fileExchange(file, dir, param.target_file_path, param.reference_file_path)
+				if None != result:
+					filenum += 1
+	print('create %d txt files' % filenum)
 
 
 if __name__ == '__main__':
