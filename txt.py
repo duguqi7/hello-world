@@ -50,10 +50,6 @@ def fileExchange(file, test_path, target_path, reference_path):
 		print('argument error', file)
 		return None
 	language = get_language(file)
-	
-	if language not in language_table:
-		return None
-	
 	#print('deal with ', file)
 	target_file = os.path.join(target_path, file)
 	test_file = os.path.join(test_path, file)
@@ -65,39 +61,40 @@ def fileExchange(file, test_path, target_path, reference_path):
 	#version
 	key_value = getKeyValue(words, 'soft_version')
 	version = key_value
-	write_line = 'version=' + key_value + '\n'
+	write_line = 'version=' + key_value + os.linesep
 	target_fd.write(write_line)
 	#pversion
 	key_value = version[:6]
-	write_line = 'pversion=' + key_value + '\n'
+	write_line = 'pversion=' + key_value + os.linesep
 	target_fd.write(write_line)
 	#md5
 	key_value = getKeyValue(words, 'digicap_md5')
-	write_line = 'md5=' + key_value + '\n'
+	write_line = 'md5=' + key_value + os.linesep
 	target_fd.write(write_line)
 	#platform
 	key_value = getKeyValue(words, 'platform')
 	field = key_value
-	write_line = 'platform=' + key_value + '\n'
+	write_line = 'platform=' + key_value + os.linesep
 	target_fd.write(write_line)
 	#language
-	language = getKeyValue(words, 'language')
-	write_line = 'language=' + language + '\n'
+	#无线报警主机打包多语言均为'ML',不再从文本中获取语言
+	#language = getKeyValue(words, 'language')
+	write_line = 'language=' + language + os.linesep
 	target_fd.write(write_line)
 	#config
 	key_value = getKeyValue(words, 'config')
-	write_line = 'config=' + key_value + '\n'
+	write_line = 'config=' + key_value + os.linesep
 	target_fd.write(write_line)
 	#field
-	write_line = 'field=' + field + '\n'
+	write_line = 'field=' + field + os.linesep
 	target_fd.write(write_line)
 	#zipmd5
 	key_value = getKeyValue(words, 'zip_md5')
-	write_line = 'zipmd5=' + key_value + '\n'
+	write_line = 'zipmd5=' + key_value + os.linesep
 	target_fd.write(write_line)
 	#filename
 	filename = 'digicap.dav'
-	write_line = 'filename=' + filename + '\n'
+	write_line = 'filename=' + filename + os.linesep
 	target_fd.write(write_line)
 	#firmwarecode
 	firmwarecode = ''
@@ -122,6 +119,7 @@ def fileExchange(file, test_path, target_path, reference_path):
 	reference_fd.close()
 	target_fd.close()
 	print('create %s OK' % target_file)
+	return 'OK'
 
 def main():
 	files = os.listdir(test_path)
