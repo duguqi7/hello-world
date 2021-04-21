@@ -8,6 +8,8 @@ import util_zip
 import txt
 import util_excel
 import update
+import time
+import shutil
 
 txtdir_table = []
 language_dict = {}
@@ -77,13 +79,19 @@ def get_builddate_from_filename(filename):
 	return filename[start_position:end_position]
 
 def update_excel():
+	try:
+		import openpyxl
+	except ImportError:
+		print('openpyxl has not been installed.')
+		return None
+
 	#更新excel文件
 	excel_files = os.listdir(param.reference_file_path)
 	for file in excel_files:
 		if '.xls' in file and 'STD' in file:
 			platform = get_platform_from_filename(file)
 			language = get_language_from_filename(file)
-			if language in language_dict[platform]:
+			if platform in language_dict.keys() and language in language_dict[platform]:
 				util_excel.update(global_version, global_date, os.path.join(param.reference_file_path, file))
 
 
@@ -127,14 +135,6 @@ def process_std_file(filename):
 	language_dict[platform] = temp
 
 def main():
-	'''
-	try:
-		import openpyxll #要验证是否安装的库名
-	except ImportError:
-		print('模块不存在')
-		return None
-	'''
-
 	#参数判断
 	if False == isinstance(param.unprocessed_file_path, str) or \
 	   '' == param.unprocessed_file_path:
@@ -148,10 +148,11 @@ def main():
 	   '' == param.target_file_path:
 		print('target_file_path error', param.target_file_path)
 		return None
+
 	#获取待处理目录下的文件列表
 	'''
 	目录下存在以下几种文件:
-	1.DEBUG_FILE压缩包,需要解压以获得内部的资料
+	1.DEBUG_FILE压缩包,需要解压以获得内部的文件
 	2.STD固件包,需要根据此类包生成对应的txt文件,更新对应的excel文件
 	3.NEU的中性包,暂不处理
 	4.map和hicore_no_strip等调试文件,暂不处理
@@ -162,6 +163,21 @@ def main():
 	for file in unprocessed_files:
 		process_std_file(file)
 	print('language dict from different platforms:', language_dict)
+	
+	#备份参考文件
+	backup_base_dir = os.path.join(param.reference_file_path, 'backup')
+	if not os.path.exists(backup_base_dir):
+		os.mkdir(path)
+	cur_time = time.strftime('%Y-%m-%d-%H-%M-%S')
+	backup_dir = os.path.join(backup_base_dir, cur_time)
+	os.mkdir(backup_dir)
+	
+	backup_files = os.listdir(param.reference_file_path)
+	for file in backup_files:
+		file = os.path.join(param.reference_file_path, file)
+		if os.path.isfile(file):
+			shutil.copy(file, backup_dir)
+	
 	#解压unprocessed中的固件包信息,更新reference中的txt和excel文件
 	for file in unprocessed_files:
 		process_debug_file(file)
@@ -172,10 +188,11 @@ def main():
 	#转化txt文件,并将txt文件和excel表格存放到target文件夹中
 	filenum = 0;
 	for dir in txtdir_table:
-		
 		files = os.listdir(dir)
 		for file in files:
-			if (-1 == file.find('CID')) and (file.find('STD') != -1):
+			platform = get_platform_from_filename(file)
+			language = get_language_from_filename(file)
+			if platform in language_dict.keys() and language in language_dict[platform]:
 				result = txt.fileExchange(file, dir, param.target_file_path, param.reference_file_path)
 				if None != result:
 					filenum += 1
